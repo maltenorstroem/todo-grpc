@@ -1,8 +1,12 @@
 package main
 
 import (
-	taskimpl "../../internal/task"
-	"../../internal/task-api"
+	"../../internal/auth"
+	"../../internal/proto"
+	"../../internal/task"
+	"./middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
@@ -36,13 +40,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		grpc_auth.UnaryServerInterceptor(middleware.JWTAuthFunc),
+	)))
 
 	// DB session weitergeben
-	taskimpl.ConnectDatabase(dbSession)
+	task.ConnectDatabase(dbSession)
 
 	// weitere Services kann man hier registrieren
-	task.RegisterTaskServiceServer(grpcServer, task.GetServiceServer())
+	proto.RegisterAuthServiceServer(grpcServer, auth.GetServiceServer())
+	proto.RegisterTaskServiceServer(grpcServer, task.GetServiceServer())
 
 	// Register reflection service on gRPC server.
 	reflection.Register(grpcServer)

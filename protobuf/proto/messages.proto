@@ -2,18 +2,27 @@ syntax = "proto3";
 
 package task.v1;
 
-option go_package = "task";
+option go_package = "proto";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "task-api/rest.proto";
+import "proto/rest.proto";
 
 
 enum Complete {
     UNKNOWN = 0;
     RUNNING = 1;
     COMPLETED = 2;
+}
+message Credentials{
+    // Eine ULID
+    string username = 1 [(gogoproto.moretags) = "db:\"username,pk,omitempty\""];
+    // Titel des Tasks
+    string password = 2 [(gogoproto.moretags) = "db:\"password,omitempty\""];
+}
+message CredentialsRequest{
+    Credentials credentials = 1;
 }
 
 // Task Entität
@@ -41,6 +50,14 @@ message GetTaskRequest {
     string id = 1;
 }
 
+message DeleteTaskRequest {
+    string id = 1;
+}
+
+message UpdateTaskRequest {
+    string id = 1;
+    Task item = 2;
+}
 // Eine Entität besteht aus dem Task und den HATEOAS Links
 message TaskEntity {
     Task data = 1;
@@ -78,14 +95,7 @@ message TaskCollection {
     repeated Link links = 2;
 }
 
-message DeleteTaskRequest {
-    string id = 1;
-}
-
 message DeleteTaskResponse {
 }
 
-message UpdateTaskRequest {
-    string id = 1;
-    Task item = 2;
-}
+

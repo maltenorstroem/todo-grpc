@@ -1,7 +1,7 @@
 package main
 
 import (
-	gw "../../internal/task-api"
+	gw "../../internal/proto"
 	"flag"
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -14,14 +14,26 @@ var (
 	echoEndpoint = flag.String("echo_endpoint", "localhost:9090", "endpoint of YourService")
 )
 
+func outgoingMatcher(headerName string) (mdName string, ok bool) {
+	return headerName, true
+}
+
+func incomingMatcher(headerName string) (mdName string, ok bool) {
+	return headerName, true
+}
+
 func run() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(runtime.WithOutgoingHeaderMatcher(outgoingMatcher), runtime.WithIncomingHeaderMatcher(incomingMatcher))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := gw.RegisterTaskServiceHandlerFromEndpoint(ctx, mux, *echoEndpoint, opts)
+	if err != nil {
+		return err
+	}
+	err = gw.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, *echoEndpoint, opts)
 	if err != nil {
 		return err
 	}
